@@ -1,0 +1,137 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:2.2.1.RELEASE"
+        classpath "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.4"
+    }
+}
+
+defaultTasks 'assemble'
+
+// Plugin: Java
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+
+tasks.withType(Jar) {
+  manifest {
+    attributes 'Implementation-Title': "Meerware Contacts"
+    attributes 'Implementation-Version': "1.0.0"
+    attributes 'Implementation-Vendor': "Meerware"
+    attributes 'Build-Date': new Date().format("yyyy-MM-dd HH:mm:ss")
+  }
+}
+
+repositories {
+    mavenCentral()
+}
+
+// Source Sets
+sourceSets {
+    functional {
+        java.srcDir file('src/functional/java')
+        resources.srcDir file('src/functional/resources')
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+// Configuration
+configurations {
+    functionalCompile.extendsFrom testCompile
+    functionalRuntime.extendsFrom testRuntime
+}
+
+
+dependencies {
+    // Compile: Guava
+    compile 'com.google.guava:guava:28.1-jre'
+
+    // Compile: Commons Lang
+    compile 'org.apache.commons:commons-lang3:3.9'
+
+    // Compile: Lib Phone Number
+    compile 'com.googlecode.libphonenumber:libphonenumber:8.11.0'
+
+    // Compile: Spring
+    compile 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compile 'org.springframework.boot:spring-boot-starter-validation'
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Compile: Flyway
+    compile 'org.flywaydb:flyway-core:6.1.0'
+
+    // Compile: H2
+    compile 'com.h2database:h2:1.4.200'
+
+    // Compile: Swagger
+    compile 'io.springfox:springfox-swagger2:2.9.2'
+
+    // Test: JUnit
+    testCompile 'junit:junit:4.12'
+
+    // Test: Mockito
+    testCompile 'org.mockito:mockito-core:3.1.0'
+
+    // Test: Spring Boot
+    testCompile('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.mockito'
+    }
+
+    // Test: Rest Assured
+    testCompile 'io.rest-assured:rest-assured:4.1.2'
+    testCompile 'io.rest-assured:rest-assured-all:4.1.2'
+}
+
+// Plugin: IDE
+apply plugin: 'idea'
+apply plugin: 'eclipse-wtp'
+eclipse {
+    classpath {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+// Plugin: Spring Boot
+apply plugin: 'org.springframework.boot'
+
+// Plugin: Spring Dependency Management
+apply plugin: 'io.spring.dependency-management'
+
+// Tasks: Functional Test
+task functionalTest(type: Test) {
+    description = 'Runs the functional tests.'
+    testClassesDirs = sourceSets.functional.output.classesDirs
+    classpath = sourceSets.functional.runtimeClasspath
+}
+check.dependsOn functionalTest
+functionalTest.mustRunAfter test
+
+// Plugins: Checkstyle
+apply plugin: 'checkstyle'
+checkstyle {
+    toolVersion '7.8.2'
+}
+
+// Plugins: Spotbugs
+apply plugin: "com.github.spotbugs"
+
+spotbugs {
+    sourceSets = [sourceSets.main]
+}
+tasks.withType(com.github.spotbugs.SpotBugsTask) {
+    reports {
+        html {
+            enabled = true
+        }
+        xml {
+            enabled = false
+        }
+    }
+}
